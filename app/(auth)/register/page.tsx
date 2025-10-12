@@ -1,106 +1,60 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Stack,
-  CircularProgress,
-} from '@mui/material';
-import { useRegisterMutation } from '@/redux/api/authApi';
-import { useRouter } from 'next/navigation';
+import { useRegisterUserMutation } from '@/redux/api/authApi';
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const [registerUser, { isLoading }] = useRegisterMutation();
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
-  const [error, setError] = useState('');
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [registerUser, { isLoading, isError, isSuccess, error }] = useRegisterUserMutation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     try {
-      await registerUser(form).unwrap();
-      router.push('/');
-    } catch (err: any) {
-      setError(err?.data?.message || 'Registration failed');
+      await registerUser(formData).unwrap();
+      alert('Registration successful!');
+    } catch (err) {
+      console.error('Registration failed', err);
     }
   };
 
   return (
-    <Box
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
-      minHeight="100vh"
-    >
-      <Box
-        component="form"
-        onSubmit={handleSubmit}
-        width={350}
-        p={4}
-        boxShadow={3}
-        borderRadius={2}
-        bgcolor="background.paper"
-      >
-        <Typography variant="h5" mb={2}>
-          Create Account
-        </Typography>
+    <div className="flex justify-center items-center min-h-screen">
+      <form onSubmit={handleSubmit} className="p-8 border rounded-lg shadow-md w-96">
+        <h2 className="text-2xl font-semibold mb-4 text-center">Register</h2>
 
-        <Stack spacing={2}>
-          <TextField
-            name="name"
-            label="Full Name"
-            fullWidth
-            value={form.name}
-            onChange={handleChange}
-          />
-          <TextField
-            name="email"
-            label="Email"
-            type="email"
-            fullWidth
-            value={form.email}
-            onChange={handleChange}
-          />
-          <TextField
-            name="password"
-            label="Password"
-            type="password"
-            fullWidth
-            value={form.password}
-            onChange={handleChange}
-          />
-          {error && (
-            <Typography color="error" variant="body2">
-              {error}
-            </Typography>
-          )}
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
-            disabled={isLoading}
-          >
-            {isLoading ? <CircularProgress size={24} /> : 'Register'}
-          </Button>
-        </Stack>
+        <input
+          type="text"
+          placeholder="Full Name"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          className="w-full mb-3 p-2 border rounded"
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          className="w-full mb-3 p-2 border rounded"
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={formData.password}
+          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+          className="w-full mb-4 p-2 border rounded"
+        />
 
-        <Typography
-          variant="body2"
-          mt={2}
-          sx={{ textAlign: 'center', cursor: 'pointer' }}
-          onClick={() => router.push('/(auth)/login')}
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
         >
-          Already have an account? Login
-        </Typography>
-      </Box>
-    </Box>
+          {isLoading ? 'Registering...' : 'Register'}
+        </button>
+
+        {isError && <p className="text-red-500 mt-3">Registration failed.</p>}
+        {isSuccess && <p className="text-green-500 mt-3">Registration successful!</p>}
+      </form>
+    </div>
   );
 }

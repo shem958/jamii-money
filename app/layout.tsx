@@ -1,20 +1,17 @@
 'use client';
 
+import { ReactNode } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
-import { theme } from '@/styles/theme';
-import { Provider } from 'react-redux';
-import { store } from '@/redux/store';
+import theme from '../styles/theme';
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <Provider store={store}>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            {children}
-          </ThemeProvider>
-        </Provider>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

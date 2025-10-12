@@ -1,26 +1,22 @@
 'use client';
 
-import { Button, Typography, Paper, Stack } from '@mui/material';
+import { Button, Typography, Stack } from '@mui/material';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../redux/store';
+import { setBalance } from '../redux/slices/walletSlice';
 
 export default function HomePage() {
+  const dispatch = useDispatch();
+  const balance = useSelector((state: RootState) => state.wallet.balance);
+
   return (
-    <Stack
-      alignItems="center"
-      justifyContent="center"
-      spacing={3}
-      sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}
-    >
-      <Paper sx={{ p: 4, textAlign: 'center', maxWidth: 400 }}>
-        <Typography variant="h2" color="primary" gutterBottom>
-          Jamii Money
-        </Typography>
-        <Typography variant="body1" color="text.secondary" gutterBottom>
-          Your trusted community finance platform.
-        </Typography>
-        <Button variant="contained" color="primary">
-          Get Started
-        </Button>
-      </Paper>
+    <Stack alignItems="center" justifyContent="center" spacing={2} sx={{ minHeight: '100vh' }}>
+      <Typography variant="h4" color="primary">
+        Wallet Balance: KES {balance}
+      </Typography>
+      <Button variant="contained" onClick={() => dispatch(setBalance(balance + 500))}>
+        Add 500 KES
+      </Button>
     </Stack>
   );
 }

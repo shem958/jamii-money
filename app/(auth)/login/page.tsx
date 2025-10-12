@@ -1,38 +1,99 @@
 'use client';
+
 import { useState } from 'react';
-import { Box, Button, TextField, Typography, Container } from '@mui/material';
-import axios from 'axios';
-import { useDispatch } from 'react-redux';
-import { setCredentials } from '@/redux/slices/authSlice';
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  Stack,
+  CircularProgress,
+} from '@mui/material';
+import { useLoginMutation } from '@/redux/api/authApi';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-  const dispatch = useDispatch();
+  const router = useRouter();
+  const [login, { isLoading }] = useLoginMutation();
   const [form, setForm] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, form);
-    dispatch(setCredentials({ user: res.data.user, token: res.data.token }));
+    setError('');
+    try {
+      await login(form).unwrap();
+      router.push('/');
+    } catch (err: any) {
+      setError(err?.data?.message || 'Login failed');
+    }
   };
 
   return (
-    <Container maxWidth="xs">
-      <Box sx={{ mt: 10, textAlign: 'center' }}>
-        <Typography variant="h5" mb={3}>Login to Jamii Money</Typography>
-        <form onSubmit={handleSubmit}>
+    <Box
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      minHeight="100vh"
+    >
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        width={350}
+        p={4}
+        boxShadow={3}
+        borderRadius={2}
+        bgcolor="background.paper"
+      >
+        <Typography variant="h5" mb={2}>
+          Sign In
+        </Typography>
+
+        <Stack spacing={2}>
           <TextField
-            fullWidth label="Email" variant="outlined" margin="normal"
-            value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
+            name="email"
+            label="Email"
+            type="email"
+            fullWidth
+            value={form.email}
+            onChange={handleChange}
           />
           <TextField
-            fullWidth label="Password" type="password" variant="outlined" margin="normal"
-            value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })}
+            name="password"
+            label="Password"
+            type="password"
+            fullWidth
+            value={form.password}
+            onChange={handleChange}
           />
-          <Button type="submit" fullWidth variant="contained" sx={{ mt: 3 }}>
-            Login
+          {error && (
+            <Typography color="error" variant="body2">
+              {error}
+            </Typography>
+          )}
+          <Button
+            type="submit"
+            variant="contained"
+            fullWidth
+            disabled={isLoading}
+          >
+            {isLoading ? <CircularProgress size={24} /> : 'Login'}
           </Button>
-        </form>
+        </Stack>
+
+        <Typography
+          variant="body2"
+          mt={2}
+          sx={{ textAlign: 'center', cursor: 'pointer' }}
+          onClick={() => router.push('/(auth)/register')}
+        >
+          Don’t have an account? Register
+        </Typography>
       </Box>
-    </Container>
+    </Box>
   );
 }

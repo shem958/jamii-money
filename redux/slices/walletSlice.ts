@@ -1,24 +1,25 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface WalletState {
     balance: number;
-    loading: boolean;
 }
 
 const initialState: WalletState = {
     balance: 0,
-    loading: false,
 };
 
 const walletSlice = createSlice({
     name: 'wallet',
     initialState,
     reducers: {
-        setBalance: (state, action) => {
+        setBalance: (state, action: PayloadAction<number>) => {
             state.balance = action.payload;
+        },
+        resetBalance: (state) => {
+            state.balance = 0;
         },
     },
 });
 
-export const { setBalance } = walletSlice.actions;
+export const { setBalance, resetBalance } = walletSlice.actions;
 export default walletSlice.reducer;

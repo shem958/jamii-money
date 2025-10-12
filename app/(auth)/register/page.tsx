@@ -1,32 +1,106 @@
 'use client';
-import { Box, Button, TextField, Typography, Container } from '@mui/material';
+
 import { useState } from 'react';
-import axios from 'axios';
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  Stack,
+  CircularProgress,
+} from '@mui/material';
+import { useRegisterMutation } from '@/redux/api/authApi';
+import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const [registerUser, { isLoading }] = useRegisterMutation();
   const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [error, setError] = useState('');
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, form);
+    setError('');
+    try {
+      await registerUser(form).unwrap();
+      router.push('/');
+    } catch (err: any) {
+      setError(err?.data?.message || 'Registration failed');
+    }
   };
 
   return (
-    <Container maxWidth="xs">
-      <Box sx={{ mt: 10, textAlign: 'center' }}>
-        <Typography variant="h5" mb={3}>Create Jamii Money Account</Typography>
-        <form onSubmit={handleSubmit}>
-          <TextField fullWidth label="Name" variant="outlined" margin="normal"
-            value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}/>
-          <TextField fullWidth label="Email" variant="outlined" margin="normal"
-            value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}/>
-          <TextField fullWidth label="Password" type="password" variant="outlined" margin="normal"
-            value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })}/>
-          <Button type="submit" fullWidth variant="contained" sx={{ mt: 3 }}>
-            Register
+    <Box
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      minHeight="100vh"
+    >
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        width={350}
+        p={4}
+        boxShadow={3}
+        borderRadius={2}
+        bgcolor="background.paper"
+      >
+        <Typography variant="h5" mb={2}>
+          Create Account
+        </Typography>
+
+        <Stack spacing={2}>
+          <TextField
+            name="name"
+            label="Full Name"
+            fullWidth
+            value={form.name}
+            onChange={handleChange}
+          />
+          <TextField
+            name="email"
+            label="Email"
+            type="email"
+            fullWidth
+            value={form.email}
+            onChange={handleChange}
+          />
+          <TextField
+            name="password"
+            label="Password"
+            type="password"
+            fullWidth
+            value={form.password}
+            onChange={handleChange}
+          />
+          {error && (
+            <Typography color="error" variant="body2">
+              {error}
+            </Typography>
+          )}
+          <Button
+            type="submit"
+            variant="contained"
+            fullWidth
+            disabled={isLoading}
+          >
+            {isLoading ? <CircularProgress size={24} /> : 'Register'}
           </Button>
-        </form>
+        </Stack>
+
+        <Typography
+          variant="body2"
+          mt={2}
+          sx={{ textAlign: 'center', cursor: 'pointer' }}
+          onClick={() => router.push('/(auth)/login')}
+        >
+          Already have an account? Login
+        </Typography>
       </Box>
-    </Container>
+    </Box>
   );
 }

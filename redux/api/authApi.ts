@@ -1,60 +1,26 @@
-import { baseApi } from './baseApi';
-import { setCredentials } from '../slices/authSlice';
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
-interface LoginRequest {
-    email: string;
-    password: string;
-}
-
-interface RegisterRequest {
-    name: string;
-    email: string;
-    password: string;
-}
-
-interface AuthResponse {
-    user: {
-        id: string;
-        name: string;
-        email: string;
-    };
-    token: string;
-}
-
-export const authApi = baseApi.injectEndpoints({
+export const authApi = createApi({
+    reducerPath: 'authApi',
+    baseQuery: fetchBaseQuery({
+        baseUrl: 'http://localhost:5000/api', // NestJS backend
+    }),
     endpoints: (builder) => ({
-        login: builder.mutation<AuthResponse, LoginRequest>({
-            query: (body) => ({
-                url: '/auth/login',
-                method: 'POST',
-                body,
-            }),
-            async onQueryStarted(arg, { dispatch, queryFulfilled }) {
-                try {
-                    const { data } = await queryFulfilled;
-                    dispatch(setCredentials(data));
-                } catch (err) {
-                    console.error(err);
-                }
-            },
-        }),
-
-        register: builder.mutation<AuthResponse, RegisterRequest>({
-            query: (body) => ({
+        registerUser: builder.mutation({
+            query: (userData) => ({
                 url: '/auth/register',
                 method: 'POST',
-                body,
+                body: userData,
             }),
-            async onQueryStarted(arg, { dispatch, queryFulfilled }) {
-                try {
-                    const { data } = await queryFulfilled;
-                    dispatch(setCredentials(data));
-                } catch (err) {
-                    console.error(err);
-                }
-            },
+        }),
+        loginUser: builder.mutation({
+            query: (credentials) => ({
+                url: '/auth/login',
+                method: 'POST',
+                body: credentials,
+            }),
         }),
     }),
 });
 
-export const { useLoginMutation, useRegisterMutation } = authApi;
+export const { useRegisterUserMutation, useLoginUserMutation } = authApi;

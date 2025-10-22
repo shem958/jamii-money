@@ -8,34 +8,45 @@ import { logout } from '@/redux/slices/authSlice';
 export default function DashboardPage() {
   const router = useRouter();
   const dispatch = useDispatch();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<any | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
-    // ✅ Retrieve user info from localStorage
-    const storedUser = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
+    // ✅ Wait until component mounts in browser
+    const timer = setTimeout(() => {
+      const storedUser = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
 
-    if (!storedUser || !token) {
-      alert('Unauthorized! Please log in.');
-      router.push('/login');
-      return;
-    }
+      if (!storedUser || !token) {
+        router.push('/login');
+      } else {
+        setUser(JSON.parse(storedUser));
+      }
+      setIsCheckingAuth(false);
+    }, 100); // small delay ensures localStorage is ready
 
-    setUser(JSON.parse(storedUser));
+    return () => clearTimeout(timer);
   }, [router]);
 
   const handleLogout = () => {
     dispatch(logout());
     localStorage.removeItem('user');
     localStorage.removeItem('token');
-    alert('You have been logged out.');
     router.push('/login');
   };
+
+  if (isCheckingAuth) {
+    return (
+      <main className="flex justify-center items-center min-h-screen">
+        <p>Checking authorization...</p>
+      </main>
+    );
+  }
 
   if (!user) {
     return (
       <main className="flex justify-center items-center min-h-screen">
-        <p>Loading dashboard...</p>
+        <p>Unauthorized. Redirecting to login...</p>
       </main>
     );
   }

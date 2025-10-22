@@ -1,11 +1,10 @@
-// /home/shercy/jamii_money_frontend/redux/api/authApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 export const authApi = createApi({
     reducerPath: 'authApi',
 
     baseQuery: fetchBaseQuery({
-        baseUrl: 'http://localhost:5000/api', // ✅ Correct base URL (no /auth here)
+        baseUrl: 'http://localhost:5000/api', // ✅ Backend base URL
         prepareHeaders: (headers, { getState }) => {
             const token = (getState() as any)?.auth?.token;
             if (token) {
@@ -19,7 +18,7 @@ export const authApi = createApi({
     endpoints: (builder) => ({
         register: builder.mutation({
             query: (data) => ({
-                url: '/auth/register', // ✅ Just one /auth
+                url: '/auth/register', // ✅ Proper route
                 method: 'POST',
                 body: data,
             }),
@@ -42,7 +41,7 @@ export const authApi = createApi({
     }),
 });
 
-// ✅ Export hooks for components
+// ✅ Export auto-generated hooks
 export const {
     useRegisterMutation,
     useLoginMutation,

@@ -18,7 +18,7 @@ export default function LoginPage() {
     try {
       const res = await loginUser(formData).unwrap();
 
-      // ✅ Save user & token to Redux + localStorage (your slice handles this)
+      // ✅ Save user & token to Redux + localStorage
       dispatch(setCredentials({ user: res.user, token: res.access_token }));
 
       alert('✅ Login successful!');

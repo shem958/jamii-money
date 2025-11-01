@@ -6,7 +6,7 @@ const theme = createTheme({
     palette: {
         mode: 'light',
         primary: {
-            main: '#4A2C2A', // Deep brown
+            main: '#0c0404ff', // Deep brown
         },
         secondary: {
             main: '#D9C2A3', // Soft beige-gold

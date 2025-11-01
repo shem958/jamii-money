@@ -1,13 +1,12 @@
+// redux/slices/authSlice.ts
 import { createSlice } from '@reduxjs/toolkit';
 
-interface AuthState {
-    user: any | null;
-    token: string | null;
-}
+const storedUser = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-const initialState: AuthState = {
-    user: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null,
-    token: typeof window !== 'undefined' ? localStorage.getItem('token') : null,
+const initialState = {
+    user: storedUser ? JSON.parse(storedUser) : null,
+    token: storedToken || null,
 };
 
 const authSlice = createSlice({

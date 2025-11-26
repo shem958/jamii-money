@@ -1,75 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { CircularProgress, Box, Typography, Paper } from '@mui/material';
+import withAuth from '@/components/withAuth'; // 👈 Import wrapper
+import { useSelector } from 'react-redux';
+import { RootState } from '@/redux/store'; // Assuming RootState is exported
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<any | null>(null);
-  const [isChecking, setIsChecking] = useState(true);
+function DashboardContent() {
+  // Access user data directly from Redux state (hydrated from localStorage)
+  const user = useSelector((state: RootState) => state.auth.user);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
-
-    // 🚫 Redirect if missing credentials
-    if (!storedUser || !token) {
-      router.replace('/login');
-      return;
-    }
-
-    try {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-    } catch (err) {
-      console.error('Invalid stored user:', err);
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
-      router.replace('/login');
-    } finally {
-      setIsChecking(false);
-    }
-  }, [router]);
-
-  // 🌀 Loading indicator (while verifying token)
-  if (isChecking) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="100vh"
-        flexDirection="column"
-        gap={2}
-      >
-        <CircularProgress color="primary" />
-        <Typography variant="body1" color="text.secondary">
-          Checking authorization...
-        </Typography>
-      </Box>
-    );
-  }
-
-  // 🚫 Unauthorized fallback (in case user is removed mid-session)
+  // Fallback state, primarily handled by withAuth but good practice
   if (!user) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="100vh"
-        flexDirection="column"
-        gap={2}
-      >
-        <Typography variant="h6" color="error">
-          Unauthorized. Redirecting...
-        </Typography>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <CircularProgress color="primary" />
       </Box>
     );
   }
 
-  // ✅ Authorized: Show Dashboard
+  // ✅ Show Dashboard
   return (
     <Box
       display="flex"
@@ -98,7 +47,16 @@ export default function DashboardPage() {
         <Typography variant="body1" sx={{ mb: 1 }}>
           <strong>Role:</strong> {user.role || '—'}
         </Typography>
+        
+        {/* Placeholder for future dashboard content */}
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 3, display: 'block', textAlign: 'center' }}>
+          This is your protected dashboard.
+        </Typography>
+
       </Paper>
     </Box>
   );
 }
+
+// Export the protected component wrapped by withAuth
+export default withAuth(DashboardContent);

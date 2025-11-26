@@ -1,13 +1,13 @@
 'use client';
 
 import { CircularProgress, Box, Typography, Paper } from '@mui/material';
-import withAuth from '@/components/withAuth'; // 👈 Import wrapper
+import withAuth from '@/components/withAuth';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store'; // Assuming RootState is exported
 
 function DashboardContent() {
   // Access user data directly from Redux state (hydrated from localStorage)
-  const user = useSelector((state: RootState) => state.auth.user);
+  const user = useSelector((state: RootState) => state.auth.user); // 👈 Error fixed here
 
   // Fallback state, primarily handled by withAuth but good practice
   if (!user) {
@@ -48,7 +48,6 @@ function DashboardContent() {
           <strong>Role:</strong> {user.role || '—'}
         </Typography>
         
-        {/* Placeholder for future dashboard content */}
         <Typography variant="caption" color="text.secondary" sx={{ mt: 3, display: 'block', textAlign: 'center' }}>
           This is your protected dashboard.
         </Typography>

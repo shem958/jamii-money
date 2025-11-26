@@ -1,11 +1,13 @@
+'use client'; // 👈 CRITICAL FIX: Mark this file as a Client Component
+
 import { Box, Button, TextField, Typography, Paper, Stack } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { useLoginMutation } from '@/redux/api/authApi';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '@/redux/slices/authSlice';
-import { useForm, SubmitHandler } from 'react-hook-form'; // 👈 NEW
-import { z } from 'zod'; // 👈 NEW
-import { zodResolver } from '@hookform/resolvers/zod'; // 👈 NEW (requires @hookform/resolvers dependency)
+import { useForm, SubmitHandler } from 'react-hook-form'; 
+import { z } from 'zod'; 
+import { zodResolver } from '@hookform/resolvers/zod'; 
 
 // 1. Define Zod schema for validation
 const LoginSchema = z.object({
@@ -29,10 +31,9 @@ export default function LoginPage() {
       const res = await loginUser(formData).unwrap();
       // Store credentials and token in Redux/localStorage
       dispatch(setCredentials({ user: res.user, token: res.access_token }));
-      // Redirect now works without middleware interference
+      // Redirect
       router.push('/dashboard'); 
     } catch (error: any) {
-      // Display a general error or parse a specific message from backend response
       console.error('Login failed:', error);
       alert(error?.data?.message || 'Invalid email or password. Please check your credentials.');
     }

@@ -1,3 +1,4 @@
+// app/(auth)/register/page.tsx (Updated for robust error handling)
 'use client';
 
 import { useRegisterMutation } from '@/redux/api/authApi';
@@ -13,23 +14,17 @@ const RegisterFormSchema = z.object({
   phone: z.string().min(10, 'Phone must be at least 10 digits'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   
-  // Payday field is typed as string (the raw input value) and refined for validation
   payday: z.string().optional().refine(val => { 
-    // Allow empty string or undefined (optional field)
     if (!val || val === '') return true; 
     
     const num = Number(val);
-    // Ensure that if a value is provided, it is a valid integer between 1 and 31
     return Number.isInteger(num) && num >= 1 && num <= 31;
   }, {
     message: "Payday must be a whole number between 1 and 31, or left blank.",
   }),
 });
 
-// 2. Define types based on Zod input and the final API payload
 type RegisterFormInputs = z.infer<typeof RegisterFormSchema>;
-
-// Manually define payload type expected by the backend (payday is a number)
 type RegisterPayload = Omit<RegisterFormInputs, 'payday'> & {
     payday?: number; 
 };
@@ -39,7 +34,6 @@ export default function RegisterPage() {
   const router = useRouter();
   const [registerUser, { isLoading, isError, isSuccess }] = useRegisterMutation();
 
-  // Use RegisterFormInputs for the useForm generic argument
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormInputs>({
     resolver: zodResolver(RegisterFormSchema),
     defaultValues: {
@@ -47,28 +41,34 @@ export default function RegisterPage() {
         email: '',
         phone: '',
         password: '',
-        payday: '', // Must match RegisterFormInputs type (string)
+        payday: '',
     }
   });
 
-  // The handler receives the raw form inputs (string for payday)
   const onSubmit: SubmitHandler<RegisterFormInputs> = async (data) => {
-    // Manually transform the input data into the correct payload format
     const payload: RegisterPayload = {
         ...data,
-        // Convert the string payday to a number or undefined
         payday: data.payday ? Number(data.payday) : undefined,
     }
 
     try {
-      // Send the correctly typed payload to the API
       await registerUser(payload).unwrap(); 
       alert('Registration successful! Redirecting to login.');
       router.push('/login'); 
-    } catch (err) {
-      console.error('Registration failed', err);
-      // More robust error message:
-      const errorMessage = (err as any)?.data?.message || 'Registration failed. A user with this email or phone may already exist.';
+    } catch (err: any) {
+      // IMPROVED ERROR LOGGING: Logs the full RTK Query error object
+      console.error('Registration failed:', err); 
+      
+      // IMPROVED ERROR MESSAGE EXTRACTION (Handles the nested error structure from NestJS filter)
+      let errorMessage = 'Registration failed. Please check your inputs.';
+
+      if (err.data && err.data.message) {
+        // If NestJS sent a custom message (e.g., ConflictException for duplicate user)
+        errorMessage = Array.isArray(err.data.message) 
+            ? err.data.message[0] // If NestJS ValidationPipe returned an array of errors
+            : err.data.message; 
+      }
+      
       alert(errorMessage);
     }
   };

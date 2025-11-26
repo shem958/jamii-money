@@ -1,10 +1,12 @@
+// app/providers.tsx (Updated)
 'use client';
 
 import { ReactNode, useEffect } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { Provider } from 'react-redux';
-import { store } from '@/redux/store'; // Use alias for consistency
+import { store } from '@/redux/store';
 import theme from '../styles/theme'; 
+import AuthLoader from './AuthLoader'; // 👈 Integrated AuthLoader
 
 export default function Providers({ children }: { children: ReactNode }) {
     useEffect(() => {
@@ -19,7 +21,9 @@ export default function Providers({ children }: { children: ReactNode }) {
         <Provider store={store}>
             <ThemeProvider theme={theme}>
                 <CssBaseline />
-                {children}
+                <AuthLoader>
+                    {children} {/* Children are now wrapped by the AuthLoader */}
+                </AuthLoader>
             </ThemeProvider>
         </Provider>
     );

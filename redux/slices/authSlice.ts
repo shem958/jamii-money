@@ -1,12 +1,10 @@
-// redux/slices/authSlice.ts
+// redux/slices/authSlice.ts (Updated)
 import { createSlice } from '@reduxjs/toolkit';
 
-const storedUser = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
-const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-
+// CRITICAL FIX: Default to null/null for SSR safety
 const initialState = {
-    user: storedUser ? JSON.parse(storedUser) : null,
-    token: storedToken || null,
+    user: null,
+    token: null,
 };
 
 const authSlice = createSlice({
@@ -18,10 +16,15 @@ const authSlice = createSlice({
             state.user = user;
             state.token = token;
 
-            if (typeof window !== 'undefined') {
+            if (typeof window !== 'undefined' && token && user) {
                 localStorage.setItem('user', JSON.stringify(user));
                 localStorage.setItem('token', token);
             }
+        },
+        // NEW: Action to load initial data from local storage, only called client-side
+        loadCredentials: (state, action) => {
+            state.user = action.payload.user;
+            state.token = action.payload.token;
         },
         logout: (state) => {
             state.user = null;
@@ -34,5 +37,5 @@ const authSlice = createSlice({
     },
 });
 
-export const { setCredentials, logout } = authSlice.actions;
+export const { setCredentials, loadCredentials, logout } = authSlice.actions;
 export default authSlice.reducer;

@@ -10,12 +10,12 @@ const defaultAuthState = {
 
 // Function to synchronously read local storage during store creation
 const getInitialAuthState = () => {
-    // 1. Check if we are on the browser (not SSR)
     if (typeof window === 'undefined') {
+        // SSR: Always return the default, uninitialized state
         return defaultAuthState;
     }
 
-    // 2. Synchronously check for token/user in localStorage
+    // Client Side: Synchronously check for token/user in localStorage
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
 
@@ -26,25 +26,23 @@ const getInitialAuthState = () => {
             return {
                 user: user,
                 token: storedToken,
-                isAuthInitialized: true,
+                isAuthInitialized: true, // DEFINITIVE: State is known
             };
         } catch (error) {
             console.error("Error parsing user from localStorage:", error);
-            // Clear bad data and return initialized state (logged out)
             localStorage.removeItem('user');
             localStorage.removeItem('token');
-            return { ...defaultAuthState, isAuthInitialized: true };
         }
     }
 
-    // 3. No token found: Return default but mark as initialized (logged out)
+    // No token found: Return default but mark as initialized (logged out)
     return { ...defaultAuthState, isAuthInitialized: true };
 };
 
 // Use the synchronous function result as the actual initial state
 const authSlice = createSlice({
     name: 'auth',
-    initialState: getInitialAuthState(), // 👈 CRITICAL FIX: Synchronously initialize state
+    initialState: getInitialAuthState(), // 👈 CRITICAL: State is now synchronous
     reducers: {
         setCredentials: (state, action) => {
             const { user, token } = action.payload;
@@ -57,6 +55,7 @@ const authSlice = createSlice({
                 localStorage.setItem('token', token);
             }
         },
+        // loadCredentials is removed as the initial state load is now synchronous
         logout: (state) => {
             state.user = null;
             state.token = null;
@@ -67,9 +66,8 @@ const authSlice = createSlice({
                 localStorage.removeItem('token');
             }
         },
-        // We remove loadCredentials as it is no longer needed
     },
 });
 
-export const { setCredentials, logout } = authSlice.actions; // Removed loadCredentials
+export const { setCredentials, logout } = authSlice.actions;
 export default authSlice.reducer;

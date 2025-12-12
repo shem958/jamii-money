@@ -1,28 +1,35 @@
 // redux/slices/authSlice.ts
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { REHYDRATE } from 'redux-persist';
+import { AuthState, AuthUser } from '@/redux/types';
 
-const initialState = {
+const initialState: AuthState = {
     user: null,
     token: null,
-    // isAuthInitialized is now obsolete
 };
 
 const authSlice = createSlice({
     name: 'auth',
     initialState,
     reducers: {
-        setCredentials: (state, action) => {
+        setCredentials: (state, action: PayloadAction<{ user: AuthUser; token: string }>) => {
             const { user, token } = action.payload;
             state.user = user;
             state.token = token;
-            // Redux Persist handles saving to localStorage automatically
         },
-        // loadCredentials action is no longer necessary
         logout: (state) => {
             state.user = null;
             state.token = null;
-            // Redux Persist handles clearing local storage automatically
         },
+    },
+    extraReducers: (builder) => {
+        // Handle rehydration from redux-persist
+        builder.addCase(REHYDRATE, (state, action: any) => {
+            if (action.payload?.auth) {
+                state.user = action.payload.auth.user;
+                state.token = action.payload.auth.token;
+            }
+        });
     },
 });
 

@@ -1,6 +1,6 @@
 // redux/types.ts
 export interface AuthUser {
-    id: string;
+    id?: string;
     name: string;
     email: string;
     role: string;

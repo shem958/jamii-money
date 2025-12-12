@@ -1,4 +1,4 @@
-// components/withAuth.tsx (Confirmed Logic is Correct)
+// components/withAuth.tsx (Final Logic)
 'use client';
 
 import React, { useEffect } from 'react';
@@ -12,19 +12,20 @@ export default function withAuth<P extends object>(
 ) {
   const ProtectedPage: React.FC<P> = (props) => {
     const router = useRouter();
-    // Read token status AND the initialization flag from Redux
-    const { token, isAuthInitialized } = useSelector((state: RootState) => state.auth);
+    // Read token status directly
+    const token = useSelector((state: RootState) => state.auth.token);
 
-    // Perform the redirect check ONLY after the Redux state is confirmed initialized
     useEffect(() => {
-      // Because the state is synchronized upon store creation, this check is definitive.
-      if (isAuthInitialized && !token) {
+      // If token is null/undefined, redirect. This is a definitive state 
+      // because PersistGate ensures Redux is hydrated before this code runs.
+      if (token === null) { 
         router.replace('/login');
       }
-    }, [isAuthInitialized, token, router]);
+    }, [token, router]);
 
-    // Show loading spinner while the status is unknown (only on first render if false)
-    if (!isAuthInitialized) {
+    // Show a loading spinner if the token is null. 
+    // This catches the brief moment before the PersistGate renders or before redirect.
+    if (!token) {
       return (
           <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
             <CircularProgress />
@@ -32,7 +33,6 @@ export default function withAuth<P extends object>(
       );
     }
 
-    // If initialized and token exists, render the component
     return <WrappedComponent {...props} />;
   };
 

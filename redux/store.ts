@@ -1,21 +1,44 @@
-import { configureStore } from '@reduxjs/toolkit';
+// redux/store.ts
+import { configureStore, combineReducers } from '@reduxjs/toolkit';
+import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
+import storage from 'redux-persist/lib/storage'; // defaults to localStorage for web
 import { authApi } from '@/redux/api/authApi';
-import authReducer from '@/redux/slices/authSlice'; // 👈 NEW: Import authReducer
+import authReducer from '@/redux/slices/authSlice';
 import walletReducer from '@/redux/slices/walletSlice';
 
-export const store = configureStore({
-    reducer: {
-        // RTK Query reducers
-        [authApi.reducerPath]: authApi.reducer,
+const rootReducer = combineReducers({
+    // RTK Query reducers
+    [authApi.reducerPath]: authApi.reducer,
+    // Local app state reducers
+    auth: authReducer,
+    wallet: walletReducer,
+});
 
-        // Local app state reducers
-        auth: authReducer, // 👈 ADDED: The local auth slice
-        wallet: walletReducer,
-    },
+// 1. Persist Configuration
+const persistConfig = {
+    key: 'root',
+    storage,
+    // Only persist the 'auth' slice
+    whitelist: ['auth'],
+};
+
+const persistedReducer = persistReducer(persistConfig, rootReducer);
+
+export const store = configureStore({
+    // 2. Use the persisted reducer
+    reducer: persistedReducer,
     middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(authApi.middleware),
+        getDefaultMiddleware({
+            // 3. Ignore Redux Persist action types in the serializability check
+            serializableCheck: {
+                ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+            },
+        }).concat(authApi.middleware),
     devTools: process.env.NODE_ENV !== 'production',
 });
 
-export type RootState = ReturnType<typeof store.getState>;
+// 4. Export the Persistor instance
+export const persistor = persistStore(store);
+
+export type RootState = ReturnType<typeof rootReducer>;
 export type AppDispatch = typeof store.dispatch;

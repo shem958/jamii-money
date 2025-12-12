@@ -4,7 +4,7 @@ import { createSlice } from '@reduxjs/toolkit';
 const initialState = {
     user: null,
     token: null,
-    // isAuthInitialized and manual localStorage logic are removed
+    // isAuthInitialized is now obsolete
 };
 
 const authSlice = createSlice({
@@ -15,12 +15,13 @@ const authSlice = createSlice({
             const { user, token } = action.payload;
             state.user = user;
             state.token = token;
-            // Redux Persist automatically saves this state
+            // Redux Persist handles saving to localStorage automatically
         },
+        // loadCredentials action is no longer necessary
         logout: (state) => {
             state.user = null;
             state.token = null;
-            // Redux Persist automatically clears this state (via PURGE or blacklist)
+            // Redux Persist handles clearing local storage automatically
         },
     },
 });

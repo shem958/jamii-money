@@ -4,17 +4,15 @@ import { CircularProgress, Box, Typography, Paper } from '@mui/material';
 import withAuth from '@/components/withAuth';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store'; 
-import DashboardLayout from '@/components/DashboardLayout'; // 👈 Imported the Layout component
-import { AuthUser } from '@/redux/types'; // 👈 Imported the AuthUser type
+import DashboardLayout from '@/components/DashboardLayout'; 
+import { AuthUser } from '@/redux/types'; // 👈 Import AuthUser type
 
 function DashboardContent() {
     // 1. Correctly select and cast the user type, resolving all TypeScript errors.
-    // The selector is now guaranteed to provide a definitive type (AuthUser | null).
     const user = useSelector((state: RootState) => state.auth.user) as AuthUser | null; 
 
-    // 2. This check remains the definitive guard for missing user data.
+    // 2. This check now reliably renders a spinner only if the user data is missing.
     if (!user) {
-        // This spinner indicates: "Token is present, but User object is null/corrupted."
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
                 <CircularProgress color="primary" />
@@ -22,7 +20,7 @@ function DashboardContent() {
         );
     }
     
-    // 3. Render the full dashboard content wrapped in the layout
+    // 3. Render the full dashboard content
     return (
         <DashboardLayout>
             <Box

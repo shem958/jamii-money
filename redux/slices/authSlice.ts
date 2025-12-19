@@ -13,23 +13,29 @@ const authSlice = createSlice({
         setCredentials: (state, action: PayloadAction<{ user: AuthUser; token: string }>) => {
             const { user, token } = action.payload;
             
-            console.log('🔐 setCredentials called:', { 
-                hasUser: !!user, 
-                hasToken: !!token,
-                userName: user?.name 
-            });
+            console.log('🔐 setCredentials action dispatched');
+            console.log('   User:', user?.name, user?.email);
+            console.log('   Token:', token?.substring(0, 20) + '...');
             
-            // Ensure we only set state if both values exist
             if (user && token) {
                 state.user = user;
                 state.token = token;
-                console.log('✅ Credentials set in Redux state');
+                console.log('✅ Credentials saved to Redux state');
+                
+                // Verify it's actually in state
+                console.log('   State after update:', {
+                    hasUser: !!state.user,
+                    hasToken: !!state.token,
+                });
             } else {
-                console.warn('⚠️ Credentials incomplete:', { user, token });
+                console.warn('⚠️ Credentials incomplete:', { 
+                    hasUser: !!user, 
+                    hasToken: !!token 
+                });
             }
         },
         logout: (state) => {
-            console.log('🚪 Logout called');
+            console.log('🚪 Logout action dispatched');
             state.user = null;
             state.token = null;
         },

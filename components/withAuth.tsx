@@ -1,42 +1,56 @@
-// components/withAuth.tsx (Final Logic)
-'use client';
+"use client";
 
-import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { CircularProgress, Box } from '@mui/material';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/redux/store';
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { CircularProgress, Box } from "@mui/material";
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
 
 export default function withAuth<P extends object>(
-    WrappedComponent: React.ComponentType<P>
+  WrappedComponent: React.ComponentType<P>
 ) {
   const ProtectedPage: React.FC<P> = (props) => {
     const router = useRouter();
-    // Read token status directly
     const token = useSelector((state: RootState) => state.auth.token);
+    const user = useSelector((state: RootState) => state.auth.user);
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
     useEffect(() => {
-      // If token is null/undefined, redirect. This is a definitive state 
-      // because PersistGate ensures Redux is hydrated before this code runs.
-      if (token === null) { 
-        router.replace('/login');
-      }
-    }, [token, router]);
+      // Add a small delay to ensure redux-persist has fully rehydrated
+      const timer = setTimeout(() => {
+        if (!token || !user) {
+          console.log("No auth found, redirecting to login");
+          router.replace("/login");
+        } else {
+          console.log("Auth verified, showing protected content");
+          setIsCheckingAuth(false);
+        }
+      }, 200);
 
-    // Show a loading spinner if the token is null. 
-    // This catches the brief moment before the PersistGate renders or before redirect.
-    if (!token) {
+      return () => clearTimeout(timer);
+    }, [token, user, router]);
+
+    // Show loading spinner while checking authentication
+    if (isCheckingAuth || !token || !user) {
       return (
-          <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-            <CircularProgress />
-          </Box>
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="100vh"
+        >
+          <CircularProgress />
+        </Box>
       );
     }
 
+    // Render the protected component
     return <WrappedComponent {...props} />;
   };
 
-  ProtectedPage.displayName = `withAuth(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
+  ProtectedPage.displayName = `withAuth(${
+    WrappedComponent.displayName || WrappedComponent.name || "Component"
+  })`;
 
   return ProtectedPage;
 }

@@ -67,8 +67,8 @@ export default function LoginPage() {
       await new Promise((resolve) => setTimeout(resolve, 150));
 
       console.log("🚀 Navigating to dashboard");
-      // Navigate to dashboard
-      router.push("/dashboard");
+      // Navigate to dashboard (use replace to prevent back button issues)
+      router.replace("/dashboard");
     } catch (error: any) {
       console.error("❌ Login failed:", error);
       setError(error?.data?.message || "Invalid email or password.");

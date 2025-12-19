@@ -7,6 +7,7 @@ import {
   Typography,
   Paper,
   Stack,
+  Alert,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useLoginMutation } from "@/redux/api/authApi";
@@ -15,6 +16,7 @@ import { setCredentials } from "@/redux/slices/authSlice";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 
 const LoginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -35,12 +37,14 @@ export default function LoginPage() {
   const [loginUser, { isLoading }] = useLoginMutation();
   const router = useRouter();
   const dispatch = useDispatch();
+  const [error, setError] = useState<string>("");
 
   const onSubmit: SubmitHandler<LoginInputs> = async (formData) => {
     try {
+      setError("");
       const res = await loginUser(formData).unwrap();
 
-      // FIX: Map res.access_token to 'token' to match the slice and dashboard logic
+      // Dispatch credentials to Redux
       dispatch(
         setCredentials({
           user: res.user,
@@ -48,10 +52,15 @@ export default function LoginPage() {
         })
       );
 
+      // CRITICAL FIX: Add a small delay to ensure redux-persist has time to save
+      // This ensures localStorage is updated before navigation
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Navigate to dashboard
       router.push("/dashboard");
     } catch (error: any) {
       console.error("Login failed:", error);
-      alert(error?.data?.message || "Invalid email or password.");
+      setError(error?.data?.message || "Invalid email or password.");
     }
   };
 
@@ -67,6 +76,13 @@ export default function LoginPage() {
         <Typography variant="h5" textAlign="center" mb={2}>
           Login
         </Typography>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack spacing={2}>
             <TextField
@@ -75,6 +91,7 @@ export default function LoginPage() {
               {...register("email")}
               error={!!errors.email}
               helperText={errors.email?.message}
+              disabled={isLoading}
             />
             <TextField
               label="Password"
@@ -82,6 +99,7 @@ export default function LoginPage() {
               {...register("password")}
               error={!!errors.password}
               helperText={errors.password?.message}
+              disabled={isLoading}
             />
             <Button
               type="submit"

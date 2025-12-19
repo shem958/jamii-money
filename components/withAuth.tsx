@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useState, useRef } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { CircularProgress, Box } from "@mui/material";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
@@ -11,36 +11,47 @@ export default function withAuth<P extends object>(
 ) {
   const ProtectedPage: React.FC<P> = (props) => {
     const router = useRouter();
+    const pathname = usePathname();
     const token = useSelector((state: RootState) => state.auth.token);
     const user = useSelector((state: RootState) => state.auth.user);
-    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-    const [shouldRender, setShouldRender] = useState(false);
+    const [isReady, setIsReady] = useState(false);
+    const hasChecked = useRef(false);
 
     useEffect(() => {
-      console.log("🔍 withAuth checking:", {
+      // Prevent multiple checks
+      if (hasChecked.current) return;
+
+      console.log("🔍 withAuth initial check:", {
         hasToken: !!token,
         hasUser: !!user,
-        isCheckingAuth,
+        pathname,
       });
 
-      // Give redux-persist more time to rehydrate (especially important on first load)
-      const checkTimer = setTimeout(() => {
-        setIsCheckingAuth(false);
+      // Wait for rehydration
+      const timer = setTimeout(() => {
+        hasChecked.current = true;
 
         if (!token || !user) {
-          console.log("❌ No auth found, redirecting to login");
+          console.log("❌ No auth, redirecting to login");
           router.replace("/login");
         } else {
-          console.log("✅ Auth verified, rendering protected content");
-          setShouldRender(true);
+          console.log("✅ Auth confirmed, showing content");
+          setIsReady(true);
         }
-      }, 300); // Increased delay to 300ms
+      }, 400); // Increased to 400ms for safer rehydration
 
-      return () => clearTimeout(checkTimer);
-    }, [token, user, router]);
+      return () => clearTimeout(timer);
+    }, []); // Empty dependency array - only run once
 
-    // Show loading spinner while checking authentication
-    if (isCheckingAuth || !shouldRender) {
+    // Monitor auth changes after initial check
+    useEffect(() => {
+      if (hasChecked.current && isReady && (!token || !user)) {
+        console.log("⚠️ Auth lost, redirecting to login");
+        router.replace("/login");
+      }
+    }, [token, user, isReady, router]);
+
+    if (!isReady) {
       return (
         <Box
           display="flex"
@@ -53,7 +64,6 @@ export default function withAuth<P extends object>(
       );
     }
 
-    // Render the protected component
     return <WrappedComponent {...props} />;
   };
 

@@ -1,4 +1,4 @@
-// redux/store.ts (FIXED VERSION)
+// redux/store.ts (PROPERLY FIXED FOR SSR)
 import { configureStore } from '@reduxjs/toolkit';
 import { 
   persistStore, 
@@ -10,33 +10,46 @@ import {
   PURGE, 
   REGISTER 
 } from 'redux-persist';
-
-// Conditional Storage Import Helper (for SSR)
-const isClient = typeof window !== 'undefined';
-const storage = isClient
-  ? require('redux-persist/lib/storage').default
-  : require('redux-persist/lib/storage/createWebStorage').default('no-op');
+import createWebStorage from 'redux-persist/lib/storage/createWebStorage';
 
 import { authApi } from '@/redux/api/authApi';
 import authReducer from '@/redux/slices/authSlice';
 import walletReducer from '@/redux/slices/walletSlice';
 
-// CRITICAL FIX: Persist only the auth slice, not the whole root
+// CRITICAL FIX: Create a noop storage for SSR
+const createNoopStorage = () => {
+  return {
+    getItem(_key: string) {
+      return Promise.resolve(null);
+    },
+    setItem(_key: string, value: any) {
+      return Promise.resolve(value);
+    },
+    removeItem(_key: string) {
+      return Promise.resolve();
+    },
+  };
+};
+
+// Use localStorage on client, noop on server
+const storage =
+  typeof window !== 'undefined'
+    ? createWebStorage('local')
+    : createNoopStorage();
+
+// Persist only the auth slice
 const persistConfig = {
   key: 'auth',
   storage,
-  whitelist: ['user', 'token'], // Only persist these fields within auth
+  whitelist: ['user', 'token'],
 };
 
 const persistedAuthReducer = persistReducer(persistConfig, authReducer);
 
 export const store = configureStore({
   reducer: {
-    // RTK Query reducer (not persisted)
     [authApi.reducerPath]: authApi.reducer,
-    // Persisted auth reducer
     auth: persistedAuthReducer,
-    // Regular wallet reducer (not persisted)
     wallet: walletReducer,
   },
   middleware: (getDefaultMiddleware) =>

@@ -1,13 +1,8 @@
-// app/providers.tsx (VERIFIED VERSION)
+// app/providers.tsx
 "use client";
 
 import { ReactNode, useEffect } from "react";
-import {
-  ThemeProvider,
-  CssBaseline,
-  CircularProgress,
-  Box,
-} from "@mui/material";
+import { ThemeProvider, CssBaseline } from "@mui/material";
 import { Provider } from "react-redux";
 import { store, persistor } from "@/redux/store";
 import { PersistGate } from "redux-persist/integration/react";
@@ -15,34 +10,30 @@ import theme from "../styles/theme";
 
 export default function Providers({ children }: { children: ReactNode }) {
   useEffect(() => {
-    // Remove server-side injected CSS (MUI requirement)
     const jssStyles = document.querySelector("#jss-server-side");
     if (jssStyles && jssStyles.parentElement) {
       jssStyles.parentElement.removeChild(jssStyles);
     }
   }, []);
 
-  // Loading component while Redux is rehydrating
+  // FIX: Use a plain HTML div to prevent MUI Hydration mismatches
   const loading = (
-    <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      minHeight="100vh"
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        fontFamily: "sans-serif",
+      }}
     >
-      <CircularProgress />
-    </Box>
+      Loading...
+    </div>
   );
 
   return (
     <Provider store={store}>
-      <PersistGate
-        loading={loading}
-        persistor={persistor}
-        onBeforeLift={() => {
-          console.log("🔄 Redux state rehydrated");
-        }}
-      >
+      <PersistGate loading={loading} persistor={persistor}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
           {children}

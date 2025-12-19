@@ -53,7 +53,7 @@ export default function LoginPage() {
       // Dispatch credentials to Redux
       dispatch(
         setCredentials({
-          user: res.user,
+          user: { ...res.user, role: res.user.role || "user" },
           token: res.access_token,
         })
       );

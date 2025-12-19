@@ -1,37 +1,44 @@
-// redux/store.ts (FINAL FIX FOR SSR ISSUE)
-import { configureStore, combineReducers } from '@reduxjs/toolkit';
-import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
-// ❌ REMOVED: import storage from 'redux-persist/lib/storage';
+// redux/store.ts (FIXED VERSION)
+import { configureStore } from '@reduxjs/toolkit';
+import {
+    persistStore,
+    persistReducer,
+    FLUSH,
+    REHYDRATE,
+    PAUSE,
+    PERSIST,
+    PURGE,
+    REGISTER
+} from 'redux-persist';
 
-// 👇 1. Conditional Storage Import Helper (CRITICAL FIX)
+// Conditional Storage Import Helper (for SSR)
 const isClient = typeof window !== 'undefined';
 const storage = isClient
-    ? require('redux-persist/lib/storage').default // Import localStorage on client
-    : require('redux-persist/lib/storage/createWebStorage').default('no-op'); // Fallback for SSR
+    ? require('redux-persist/lib/storage').default
+    : require('redux-persist/lib/storage/createWebStorage').default('no-op');
 
 import { authApi } from '@/redux/api/authApi';
 import authReducer from '@/redux/slices/authSlice';
 import walletReducer from '@/redux/slices/walletSlice';
 
-const rootReducer = combineReducers({
-    // RTK Query reducers
-    [authApi.reducerPath]: authApi.reducer,
-    // Local app state reducers
-    auth: authReducer,
-    wallet: walletReducer,
-});
-
-// 2. Persist Configuration
+// CRITICAL FIX: Persist only the auth slice, not the whole root
 const persistConfig = {
-    key: 'root',
-    storage, // 👈 Uses the conditional storage defined above
-    whitelist: ['auth'],
+    key: 'auth',
+    storage,
+    whitelist: ['user', 'token'], // Only persist these fields within auth
 };
 
-const persistedReducer = persistReducer(persistConfig, rootReducer);
+const persistedAuthReducer = persistReducer(persistConfig, authReducer);
 
 export const store = configureStore({
-    reducer: persistedReducer,
+    reducer: {
+        // RTK Query reducer (not persisted)
+        [authApi.reducerPath]: authApi.reducer,
+        // Persisted auth reducer
+        auth: persistedAuthReducer,
+        // Regular wallet reducer (not persisted)
+        wallet: walletReducer,
+    },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
             serializableCheck: {
@@ -43,5 +50,5 @@ export const store = configureStore({
 
 export const persistor = persistStore(store);
 
-export type RootState = ReturnType<typeof rootReducer>;
+export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

@@ -14,24 +14,33 @@ export default function withAuth<P extends object>(
     const token = useSelector((state: RootState) => state.auth.token);
     const user = useSelector((state: RootState) => state.auth.user);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+    const [shouldRender, setShouldRender] = useState(false);
 
     useEffect(() => {
-      // Add a small delay to ensure redux-persist has fully rehydrated
-      const timer = setTimeout(() => {
+      console.log("🔍 withAuth checking:", {
+        hasToken: !!token,
+        hasUser: !!user,
+        isCheckingAuth,
+      });
+
+      // Give redux-persist more time to rehydrate (especially important on first load)
+      const checkTimer = setTimeout(() => {
+        setIsCheckingAuth(false);
+
         if (!token || !user) {
-          console.log("No auth found, redirecting to login");
+          console.log("❌ No auth found, redirecting to login");
           router.replace("/login");
         } else {
-          console.log("Auth verified, showing protected content");
-          setIsCheckingAuth(false);
+          console.log("✅ Auth verified, rendering protected content");
+          setShouldRender(true);
         }
-      }, 200);
+      }, 300); // Increased delay to 300ms
 
-      return () => clearTimeout(timer);
+      return () => clearTimeout(checkTimer);
     }, [token, user, router]);
 
     // Show loading spinner while checking authentication
-    if (isCheckingAuth || !token || !user) {
+    if (isCheckingAuth || !shouldRender) {
       return (
         <Box
           display="flex"

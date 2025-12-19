@@ -16,7 +16,8 @@ import { setCredentials } from "@/redux/slices/authSlice";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { persistor } from "@/redux/store";
 
 const LoginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -44,6 +45,11 @@ export default function LoginPage() {
       setError("");
       const res = await loginUser(formData).unwrap();
 
+      console.log("📥 Login response received:", {
+        hasUser: !!res.user,
+        hasToken: !!res.access_token,
+      });
+
       // Dispatch credentials to Redux
       dispatch(
         setCredentials({
@@ -52,14 +58,19 @@ export default function LoginPage() {
         })
       );
 
-      // CRITICAL FIX: Add a small delay to ensure redux-persist has time to save
-      // This ensures localStorage is updated before navigation
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // CRITICAL FIX: Wait for redux-persist to flush state to storage
+      console.log("⏳ Waiting for persist to flush...");
+      await persistor.flush();
+      console.log("✅ Persist flush complete");
 
+      // Additional safety delay
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      console.log("🚀 Navigating to dashboard");
       // Navigate to dashboard
       router.push("/dashboard");
     } catch (error: any) {
-      console.error("Login failed:", error);
+      console.error("❌ Login failed:", error);
       setError(error?.data?.message || "Invalid email or password.");
     }
   };

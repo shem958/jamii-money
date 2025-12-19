@@ -8,25 +8,42 @@ import {
   Paper,
   Stack,
   Alert,
+  IconButton,
+  InputAdornment,
+  CircularProgress,
 } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
-import { useLoginMutation } from "@/redux/api/authApi";
-import { useDispatch } from "react-redux";
-import { setCredentials } from "@/redux/slices/authSlice";
+import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState, useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { setCredentials } from "@/redux/slices/authSlice";
+import { useLoginMutation } from "@/redux/api/authApi";
 import { persistor } from "@/redux/store";
 
+// --------------------
+// Validation schema
+// --------------------
 const LoginSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password is required"),
 });
 
 type LoginInputs = z.infer<typeof LoginSchema>;
 
 export default function LoginPage() {
+  const router = useRouter();
+  const dispatch = useDispatch();
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // RTK Query mutation
+  const [loginUser, { isLoading }] = useLoginMutation();
+
+  // React Hook Form
   const {
     register,
     handleSubmit,
@@ -35,46 +52,56 @@ export default function LoginPage() {
     resolver: zodResolver(LoginSchema),
   });
 
-  const [loginUser, { isLoading }] = useLoginMutation();
-  const router = useRouter();
-  const dispatch = useDispatch();
-  const [error, setError] = useState<string>("");
-
+  // --------------------
+  // Submit handler
+  // --------------------
   const onSubmit: SubmitHandler<LoginInputs> = async (formData) => {
     try {
-      setError("");
+      setError(null);
+
+      /**
+       * Because authApi.ts uses:
+       * transformResponse: (response) => response.data
+       *
+       * res === {
+       *   access_token: string,
+       *   user: { ... }
+       * }
+       */
       const res = await loginUser(formData).unwrap();
 
-      console.log("📥 Login response received:", {
-        hasUser: !!res.user,
-        hasToken: !!res.access_token,
-      });
+      if (!res?.user || !res?.access_token) {
+        throw new Error("Invalid response from server.");
+      }
 
-      // Dispatch credentials to Redux
+      // Save credentials to Redux
       dispatch(
         setCredentials({
-          user: { ...res.user, role: res.user.role || "user" },
+          user: {
+            ...res.user,
+            role: res.user.role || "user",
+          },
           token: res.access_token,
         })
       );
 
-      // CRITICAL FIX: Wait for redux-persist to flush state to storage
-      console.log("⏳ Waiting for persist to flush...");
+      // Ensure redux-persist writes before navigation
       await persistor.flush();
-      console.log("✅ Persist flush complete");
 
-      // Additional safety delay
-      await new Promise((resolve) => setTimeout(resolve, 150));
-
-      console.log("🚀 Navigating to dashboard");
-      // Navigate to dashboard (use replace to prevent back button issues)
+      // Redirect to protected dashboard
       router.replace("/dashboard");
-    } catch (error: any) {
-      console.error("❌ Login failed:", error);
-      setError(error?.data?.message || "Invalid email or password.");
+    } catch (err: any) {
+      console.error("❌ Login failed:", err);
+
+      setError(
+        err?.data?.message || err?.message || "Invalid email or password."
+      );
     }
   };
 
+  // --------------------
+  // UI
+  // --------------------
   return (
     <Box
       display="flex"
@@ -82,44 +109,93 @@ export default function LoginPage() {
       alignItems="center"
       minHeight="100vh"
       bgcolor="#faf9f6"
+      px={2}
     >
-      <Paper elevation={3} sx={{ p: 4, width: 400 }}>
-        <Typography variant="h5" textAlign="center" mb={2}>
-          Login
-        </Typography>
+      <Paper
+        elevation={4}
+        sx={{ p: 4, width: "100%", maxWidth: 400, borderRadius: 3 }}
+      >
+        <Box textAlign="center" mb={3}>
+          <Typography
+            variant="h4"
+            fontWeight="bold"
+            color="primary"
+            gutterBottom
+          >
+            Jamii Money
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Sign in to your protected dashboard
+          </Typography>
+        </Box>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" sx={{ mb: 3 }}>
             {error}
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <Stack spacing={2}>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <Stack spacing={3}>
             <TextField
-              label="Email"
+              fullWidth
+              label="Email Address"
               type="email"
               {...register("email")}
               error={!!errors.email}
               helperText={errors.email?.message}
               disabled={isLoading}
             />
+
             <TextField
+              fullWidth
               label="Password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               {...register("password")}
               error={!!errors.password}
               helperText={errors.password?.message}
               disabled={isLoading}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      edge="end"
+                      aria-label="toggle password visibility"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
+
             <Button
               type="submit"
               variant="contained"
+              size="large"
               fullWidth
               disabled={isLoading}
+              sx={{ py: 1.5, fontSize: "1rem", fontWeight: "bold" }}
             >
-              {isLoading ? "Logging in..." : "Login"}
+              {isLoading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "Login"
+              )}
             </Button>
+
+            <Box textAlign="center">
+              <Typography variant="body2">
+                New to Jamii Money?{" "}
+                <Button
+                  onClick={() => router.push("/register")}
+                  sx={{ textTransform: "none", fontWeight: "bold" }}
+                >
+                  Create an account
+                </Button>
+              </Typography>
+            </Box>
           </Stack>
         </form>
       </Paper>

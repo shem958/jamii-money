@@ -1,49 +1,47 @@
+// redux/api/authApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { RootState } from '@/redux/store';
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    role?: string;
+  };
+  access_token: string;
+}
 
 export const authApi = createApi({
-    reducerPath: 'authApi',
-
-    baseQuery: fetchBaseQuery({
-        baseUrl: 'http://localhost:5000/api', // ✅ Backend base URL
-        prepareHeaders: (headers, { getState }) => {
-            const token = (getState() as any)?.auth?.token;
-            if (token) {
-                headers.set('Authorization', `Bearer ${token}`);
-            }
-            headers.set('Content-Type', 'application/json');
-            return headers;
-        },
+  reducerPath: 'authApi',
+  baseQuery: fetchBaseQuery({
+    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
+    prepareHeaders: (headers, { getState }) => {
+      // Get token from Redux state
+      const token = (getState() as RootState).auth.token;
+      
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+      
+      return headers;
+    },
+  }),
+  endpoints: (builder) => ({
+    login: builder.mutation<LoginResponse, LoginRequest>({
+      query: (credentials) => ({
+        url: '/auth/login',
+        method: 'POST',
+        body: credentials,
+      }),
     }),
-
-    endpoints: (builder) => ({
-        register: builder.mutation({
-            query: (data) => ({
-                url: '/auth/register', // ✅ Proper route
-                method: 'POST',
-                body: data,
-            }),
-        }),
-
-        login: builder.mutation({
-            query: (data) => ({
-                url: '/auth/login',
-                method: 'POST',
-                body: data,
-            }),
-        }),
-
-        getProfile: builder.query({
-            query: () => ({
-                url: '/auth/profile',
-                method: 'GET',
-            }),
-        }),
-    }),
+  }),
 });
 
-// ✅ Export auto-generated hooks
-export const {
-    useRegisterMutation,
-    useLoginMutation,
-    useGetProfileQuery,
-} = authApi;
+export const { useLoginMutation } = authApi;

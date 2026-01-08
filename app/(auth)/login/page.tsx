@@ -23,9 +23,6 @@ import { setCredentials } from "@/redux/slices/authSlice";
 import { useLoginMutation } from "@/redux/api/authApi";
 import { persistor } from "@/redux/store";
 
-// --------------------
-// Validation schema
-// --------------------
 const LoginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password is required"),
@@ -36,14 +33,11 @@ type LoginInputs = z.infer<typeof LoginSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const dispatch = useDispatch();
-
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // RTK Query mutation
   const [loginUser, { isLoading }] = useLoginMutation();
 
-  // React Hook Form
   const {
     register,
     handleSubmit,
@@ -52,29 +46,17 @@ export default function LoginPage() {
     resolver: zodResolver(LoginSchema),
   });
 
-  // --------------------
-  // Submit handler
-  // --------------------
   const onSubmit: SubmitHandler<LoginInputs> = async (formData) => {
     try {
       setError(null);
-
-      /**
-       * Because authApi.ts uses:
-       * transformResponse: (response) => response.data
-       *
-       * res === {
-       *   access_token: string,
-       *   user: { ... }
-       * }
-       */
       const res = await loginUser(formData).unwrap();
 
+      // Ensure data exists before mapping to Redux
       if (!res?.user || !res?.access_token) {
-        throw new Error("Invalid response from server.");
+        throw new Error("Invalid response: user or token missing.");
       }
 
-      // Save credentials to Redux
+      // Map 'access_token' to 'token' for Redux state
       dispatch(
         setCredentials({
           user: {
@@ -85,55 +67,26 @@ export default function LoginPage() {
         })
       );
 
-      // Ensure redux-persist writes before navigation
+      // Force storage write before navigation
       await persistor.flush();
-
-      // Redirect to protected dashboard
       router.replace("/dashboard");
     } catch (err: any) {
       console.error("❌ Login failed:", err);
-
       setError(
         err?.data?.message || err?.message || "Invalid email or password."
       );
     }
   };
 
-  // --------------------
-  // UI
-  // --------------------
   return (
-    <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      minHeight="100vh"
-      bgcolor="#faf9f6"
-      px={2}
-    >
-      <Paper
-        elevation={4}
-        sx={{ p: 4, width: "100%", maxWidth: 400, borderRadius: 3 }}
-      >
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh" bgcolor="#faf9f6" px={2}>
+      <Paper elevation={4} sx={{ p: 4, width: "100%", maxWidth: 400, borderRadius: 3 }}>
         <Box textAlign="center" mb={3}>
-          <Typography
-            variant="h4"
-            fontWeight="bold"
-            color="primary"
-            gutterBottom
-          >
-            Jamii Money
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Sign in to your protected dashboard
-          </Typography>
+          <Typography variant="h4" fontWeight="bold" color="primary" gutterBottom>Jamii Money</Typography>
+          <Typography variant="body2" color="text.secondary">Sign in to your protected dashboard</Typography>
         </Box>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
+        {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <Stack spacing={3}>
@@ -146,7 +99,6 @@ export default function LoginPage() {
               helperText={errors.email?.message}
               disabled={isLoading}
             />
-
             <TextField
               fullWidth
               label="Password"
@@ -158,42 +110,20 @@ export default function LoginPage() {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      edge="end"
-                      aria-label="toggle password visibility"
-                    >
+                    <IconButton onClick={() => setShowPassword((prev) => !prev)} edge="end">
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
                 ),
               }}
             />
-
-            <Button
-              type="submit"
-              variant="contained"
-              size="large"
-              fullWidth
-              disabled={isLoading}
-              sx={{ py: 1.5, fontSize: "1rem", fontWeight: "bold" }}
-            >
-              {isLoading ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                "Login"
-              )}
+            <Button type="submit" variant="contained" size="large" fullWidth disabled={isLoading} sx={{ py: 1.5 }}>
+              {isLoading ? <CircularProgress size={24} color="inherit" /> : "Login"}
             </Button>
-
             <Box textAlign="center">
               <Typography variant="body2">
                 New to Jamii Money?{" "}
-                <Button
-                  onClick={() => router.push("/register")}
-                  sx={{ textTransform: "none", fontWeight: "bold" }}
-                >
-                  Create an account
-                </Button>
+                <Button onClick={() => router.push("/register")} sx={{ fontWeight: "bold" }}>Create an account</Button>
               </Typography>
             </Box>
           </Stack>
